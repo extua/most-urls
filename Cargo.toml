@@ -5,3 +5,4 @@ edition = "2024"
 
 [dependencies]
 nanoserde = { version = "0.2.1", default-features = false, features = ["std", "json"] }
+urlencoding = "2.1.3"
