@@ -1,17 +1,13 @@
 use nanoserde::DeJson;
-use std::fs::File;
+use std::fs::{self, File};
 use std::io::{self, BufRead};
 use std::path::Path;
 
 fn main() {
-    // File hosts.txt must exist in the current path
-    // let mut input = String::new();
-
-    // io::stdin().read_line(&mut input).unwrap();
-
     #[derive(DeJson, Debug)]
     struct CDXIndex {
         url: String,
+        status: String,
     }
 
     if let Ok(lines) = read_lines("urls.txt") {
@@ -19,41 +15,46 @@ fn main() {
 
         let mut url_list = Vec::new();
 
-        for line in lines.map_while(Result::ok).enumerate() {
+        let line_iterator = lines.map_while(Result::ok).enumerate();
+
+        for line in line_iterator {
             // extract the json object from the cdx(j) line
             let index_json_line: &str = line.1.splitn(3, " ").nth(2).unwrap();
 
             // Deserialse json to extract just the url
             let index: CDXIndex = DeJson::deserialize_json(index_json_line).unwrap();
 
-            println!("{}", index.url);
+            let url_length = index.url.len();
 
-            url_list.push(index.url);
+            let status = index.status.chars().nth(0).unwrap();
+            println!("{status}");
 
-            // now write out to a bufrwiter
+            let record = (index.url, url_length, status);
 
-            // if line.0 == 100 {
-            //     break;
-            // }
+            // push to url list a tuple of strings
+            // including the digest
+
+            url_list.push(record);
         }
 
-        let duplicated_list = url_list.len();
-        // deduplicate the list
-        url_list.dedup();
+        // filter the list and deduplicate by key
+        // should be 225 when testing with test dataset
+        let duplicated_list_size = url_list.len();
+        // deduplicate by url
+        url_list.dedup_by(|a, b| a.0 == b.0);
         let unduplicated_list_size = url_list.len();
 
-        println!(
-            "duplicated {duplicated_list} unduplicated {unduplicated_list_size}\n\nNow convert list to numbers"
-        );
+        println!("duplicated {duplicated_list_size} unduplicated {unduplicated_list_size}");
 
-        for url in url_list {
-            let url_length = url.len();
-            println!("{url_length}");
-        }
+        let list_string_tuples: Vec<String> = url_list
+            .iter()
+            .map(|f| format!("{},{}", f.1.to_string(),f.2))
+            .collect();
 
-        // next we want to group this into a table which lookes like a list of tuples:
-        // [(1,3),(2,5),(3,15)] etc?
-        // match
+        println!("{:?}", list_string_tuples);
+        let stringified_list = list_string_tuples.join("\n");
+
+        fs::write("values.csv", stringified_list).unwrap();
     }
 }
 
