@@ -1,15 +1,18 @@
 use polars::prelude::*;
 
 fn main() {
- let df = LazyCsvReader::new("values.csv")
-    .with_has_header(true)
-    .with_separator(b',')
-    .finish().unwrap()
+    let csv_schema = Schema::from_iter(vec![
+        Field::new("raw characters".into(), DataType::UInt64),
+        Field::new("status code".into(), DataType::UInt32),
+    ]);
 
-    // let lf: DataFrame = CsvReader::new("values.csv")
-    //     .with_has_header(false)
-    //     .finish()
-    //     .unwrap();
+    let df = LazyCsvReader::new("values.csv")
+        .with_has_header(false)
+        .with_schema(Some(csv_schema.into()))
+        .finish()
+        .unwrap()
+        .collect()
+        .unwrap();
 
-    println!("{df}");
+    print!("{df}");
 }
