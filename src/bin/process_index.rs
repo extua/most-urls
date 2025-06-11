@@ -48,7 +48,7 @@ fn main() {
 
         let list_string_tuples: Vec<String> = url_list
             .iter()
-            .map(|f| format!("{},{}", f.1.to_string(),f.2))
+            .map(|f| format!("{},{}", f.1.to_string(), f.2))
             .collect();
 
         println!("{:?}", list_string_tuples);
