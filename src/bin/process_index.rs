@@ -1,7 +1,34 @@
+use idna::{punycode, uts46};
 use nanoserde::DeJson;
 use std::fs::{self, File};
 use std::io::{self, BufRead};
 use std::path::Path;
+use url::Url;
+use urlencoding::decode;
+
+fn internationalised_domain_length(parsed_url: Url) -> usize {
+    let url = parsed_url.as_str();
+
+    let raw_url_host = match parsed_url.host_str() {
+        Some(url_host) => url_host,
+        None => "",
+    };
+
+    let i18n_host = match punycode::decode_to_string(raw_url_host) {
+        Some(i18n_host) => i18n_host,
+        None => "".to_owned(),
+    };
+
+    let host_length_difference: usize = raw_url_host.chars().count() - i18n_host.chars().count();
+
+    let decoded_length_difference: usize =
+        url.chars().count() - decode(&url).expect("UTF-8").chars().count();
+
+    let total_difference: usize =
+        url.chars().count() - (host_length_difference + decoded_length_difference);
+
+    return total_difference;
+}
 
 fn main() {
     #[derive(DeJson, Debug)]
@@ -15,6 +42,8 @@ fn main() {
 
         let mut url_list = Vec::new();
 
+        let mut invalid_urls: usize = 0;
+
         let line_iterator = lines.map_while(Result::ok).enumerate();
 
         for line in line_iterator {
@@ -24,13 +53,23 @@ fn main() {
             // Deserialse json to extract just the url
             let index: CDXIndex = DeJson::deserialize_json(index_json_line).unwrap();
 
-            let url_length = index.url.len();
+            let url = index.url;
 
-            let status = index.status.chars().nth(0).unwrap();
-            println!("{status}");
+            let parsed_url = match Url::parse(&url) {
+                Ok(parsed_url) => parsed_url,
+                Err(_) => {
+                    invalid_urls = invalid_urls.wrapping_add(1);
+                    continue;
+                }
+            };
 
-            let record = (index.url, url_length, status);
+            let url_length = url.len();
 
+            let i18_url_length = internationalised_domain_length(parsed_url);
+
+            let status = index.status.chars().nth(0).unwrap() as u8;
+
+            let record = (url, url_length, status, i18_url_length);
             // push to url list a tuple of strings
             // including the digest
 
@@ -44,7 +83,9 @@ fn main() {
         url_list.dedup_by(|a, b| a.0 == b.0);
         let unduplicated_list_size = url_list.len();
 
-        println!("duplicated {duplicated_list_size} unduplicated {unduplicated_list_size}");
+        println!(
+            "invalid {invalid_urls}\nduplicated {duplicated_list_size}\nunduplicated {unduplicated_list_size}"
+        );
 
         let list_string_tuples: Vec<String> = url_list
             .iter()
@@ -54,7 +95,7 @@ fn main() {
         println!("{:?}", list_string_tuples);
         let stringified_list = list_string_tuples.join("\n");
 
-        fs::write("values.csv", stringified_list).unwrap();
+        // fs::write("values.csv", stringified_list).unwrap();
     }
 }
 
