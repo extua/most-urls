@@ -1,33 +1,37 @@
-use idna::{punycode, uts46};
+use idna::uts46::{self, Uts46};
 use nanoserde::DeJson;
 use std::fs::{self, File};
 use std::io::{self, BufRead};
 use std::path::Path;
 use url::Url;
-use urlencoding::decode;
 
 fn internationalised_domain_length(parsed_url: Url) -> usize {
     let url = parsed_url.as_str();
 
-    let raw_url_host = match parsed_url.host_str() {
-        Some(url_host) => url_host,
-        None => "",
+    let i18n_domain_length_difference = match parsed_url.domain() {
+        Some(raw_url_domain) => {
+            let i18n_domain = Uts46::to_unicode(
+                &Uts46::new(),
+                raw_url_domain.as_bytes(),
+                idna::AsciiDenyList::EMPTY,
+                uts46::Hyphens::Allow,
+            )
+            .0;
+
+            raw_url_domain.chars().count() - i18n_domain.chars().count()
+        }
+        None => 0,
     };
 
-    let i18n_host = match punycode::decode_to_string(raw_url_host) {
-        Some(i18n_host) => i18n_host,
-        None => "".to_owned(),
-    };
+    let decoded_length_difference: usize = url.chars().count()
+        - percent_encoding::percent_decode_str(url)
+            .decode_utf8_lossy()
+            .chars()
+            .count();
 
-    let host_length_difference: usize = raw_url_host.chars().count() - i18n_host.chars().count();
+    let total_difference: usize = i18n_domain_length_difference + decoded_length_difference;
 
-    let decoded_length_difference: usize =
-        url.chars().count() - decode(&url).expect("UTF-8").chars().count();
-
-    let total_difference: usize =
-        url.chars().count() - (host_length_difference + decoded_length_difference);
-
-    return total_difference;
+    url.chars().count() - total_difference
 }
 
 fn main() {
@@ -67,8 +71,9 @@ fn main() {
 
             let i18_url_length = internationalised_domain_length(parsed_url);
 
-            let status = index.status.chars().nth(0).unwrap() as u8;
+            let status = index.status.chars().next().unwrap();
 
+            // println!("{status}");
             let record = (url, url_length, status, i18_url_length);
             // push to url list a tuple of strings
             // including the digest
@@ -89,13 +94,13 @@ fn main() {
 
         let list_string_tuples: Vec<String> = url_list
             .iter()
-            .map(|f| format!("{},{}", f.1.to_string(), f.2))
+            .map(|f| format!("{},{},{}", f.1, f.2, f.3))
             .collect();
 
-        println!("{:?}", list_string_tuples);
         let stringified_list = list_string_tuples.join("\n");
+        println!("{}", stringified_list);
 
-        // fs::write("values.csv", stringified_list).unwrap();
+        fs::write("values.csv", stringified_list).unwrap();
     }
 }
 
