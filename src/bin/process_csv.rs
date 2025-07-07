@@ -15,5 +15,5 @@ fn main() {
         .collect()
         .unwrap();
 
-    print!("{df}");
+    println!("{df}");
 }
