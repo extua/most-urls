@@ -1,10 +1,11 @@
 use polars::prelude::*;
 
 fn main() {
+
     let csv_schema = Schema::from_iter(vec![
         Field::new("raw characters".into(), DataType::UInt64),
-        Field::new("status code".into(), DataType::UInt32),
         Field::new("i18n characters".into(), DataType::UInt64),
+        Field::new("status code".into(), DataType::String),
     ]);
 
     let lazy_frame = LazyCsvReader::new("values.csv")

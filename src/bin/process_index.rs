@@ -74,7 +74,7 @@ fn main() {
             let status = index.status.chars().next().unwrap();
 
             // println!("{status}");
-            let record = (url, url_length, status, i18_url_length);
+            let record = (url, url_length, i18_url_length, status);
             // push to url list a tuple of strings
             // including the digest
 
