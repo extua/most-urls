@@ -7,13 +7,18 @@ fn main() {
         Field::new("i18n characters".into(), DataType::UInt64),
     ]);
 
-    let df = LazyCsvReader::new("values.csv")
+    let lazy_frame = LazyCsvReader::new("values.csv")
         .with_has_header(false)
         .with_schema(Some(csv_schema.into()))
         .finish()
-        .unwrap()
+        .unwrap();
+
+    let grouped_df = lazy_frame
+        .group_by([col("raw characters")])
+        .agg([col("status code").sum()])
+        .sort(["raw characters"], Default::default())
         .collect()
         .unwrap();
 
-    println!("{df}");
+    println!("{:?}", grouped_df);
 }
