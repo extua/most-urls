@@ -54,12 +54,10 @@ fn main() {
             // extract the json object from the cdx(j) line
             let index_json_line: &str = line.1.splitn(3, " ").nth(2).unwrap();
 
-            // Deserialse json to extract just the url
+            // Deserialise json
             let index: CDXIndex = DeJson::deserialize_json(index_json_line).unwrap();
 
-            let url = index.url;
-
-            let parsed_url = match Url::parse(&url) {
+            let parsed_url = match Url::parse(&index.url) {
                 Ok(parsed_url) => parsed_url,
                 Err(_) => {
                     invalid_urls = invalid_urls.wrapping_add(1);
@@ -67,17 +65,15 @@ fn main() {
                 }
             };
 
-            let url_length = url.len();
+            let url_length: usize = index.url.len();
 
-            let i18_url_length = internationalised_domain_length(parsed_url);
+            let i18_url_length: usize = internationalised_domain_length(parsed_url);
 
-            let status = index.status.chars().next().unwrap();
+            let status: char = index.status.chars().next().unwrap();
 
-            // println!("{status}");
-            let record = (url, url_length, i18_url_length, status);
+            let record = (index.url, url_length, i18_url_length, status);
             // push to url list a tuple of strings
             // including the digest
-
             url_list.push(record);
         }
 
@@ -92,13 +88,11 @@ fn main() {
             "invalid {invalid_urls}\nduplicated {duplicated_list_size}\nunduplicated {unduplicated_list_size}"
         );
 
-        let list_string_tuples: Vec<String> = url_list
+        let stringified_list: String = url_list
             .iter()
             .map(|f| format!("{},{},{}", f.1, f.2, f.3))
-            .collect();
-
-        let stringified_list = list_string_tuples.join("\n");
-        println!("{}", stringified_list);
+            .collect::<Vec<String>>()
+            .join("\n");
 
         fs::write("values.csv", stringified_list).unwrap();
     }
