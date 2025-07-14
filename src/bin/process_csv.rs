@@ -18,23 +18,23 @@ fn main() {
         .group_by(["raw_characters"])
         .agg([
             col("raw_characters")
-                .filter(col("status_code").eq(lit(1)))
+                .filter(col("status_code").eq(lit(1u8)))
                 .count()
                 .alias("informational"),
             col("raw_characters")
-                .filter(col("status_code").eq(lit(2)))
+                .filter(col("status_code").eq(lit(2u8)))
                 .count()
                 .alias("successful"),
             col("raw_characters")
-                .filter(col("status_code").eq(lit(3)))
+                .filter(col("status_code").eq(lit(3u8)))
                 .count()
                 .alias("redirection"),
             col("raw_characters")
-                .filter(col("status_code").eq(lit(4)))
+                .filter(col("status_code").eq(lit(4u8)))
                 .count()
                 .alias("client_error"),
             col("raw_characters")
-                .filter(col("status_code").eq(lit(5)))
+                .filter(col("status_code").eq(lit(5u8)))
                 .count()
                 .alias("server_error"),
             col("raw_characters").count().alias("total"),

@@ -5,7 +5,7 @@ use std::io::{self, BufRead};
 use std::path::Path;
 use url::Url;
 
-fn internationalised_domain_length(parsed_url: Url) -> usize {
+fn internationalised_domain_length(parsed_url: &Url) -> usize {
     let url = parsed_url.as_str();
 
     let i18n_domain_length_difference = match parsed_url.domain() {
@@ -52,7 +52,7 @@ fn main() {
 
         for line in line_iterator {
             // extract the json object from the cdx(j) line
-            let index_json_line: &str = line.1.splitn(3, " ").nth(2).unwrap();
+            let index_json_line: &str = line.1.splitn(3, ' ').nth(2).unwrap();
 
             // Deserialise json
             let index: CDXIndex = DeJson::deserialize_json(index_json_line).unwrap();
@@ -67,7 +67,7 @@ fn main() {
 
             let url_length: usize = index.url.len();
 
-            let i18_url_length: usize = internationalised_domain_length(parsed_url);
+            let i18_url_length: usize = internationalised_domain_length(&parsed_url);
 
             let status: char = index.status.chars().next().unwrap();
 
