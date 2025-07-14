@@ -1,11 +1,11 @@
-use std::fs::File;
 use polars::prelude::*;
+use std::fs::File;
 
 fn main() {
     let csv_schema = Schema::from_iter(vec![
         Field::new("raw_characters".into(), DataType::UInt64),
         Field::new("i18n_characters".into(), DataType::UInt64),
-        Field::new("status_code".into(), DataType::String),
+        Field::new("status_code".into(), DataType::UInt32),
     ]);
 
     let lazy_frame = LazyCsvReader::new("values.csv")
@@ -16,15 +16,38 @@ fn main() {
 
     let mut grouped_df = lazy_frame
         .group_by(["raw_characters"])
-        .agg([col("raw_characters").count().alias("frequency")])
+        .agg([
+            col("raw_characters")
+                .filter(col("status_code").eq(lit(1)))
+                .count()
+                .alias("informational"),
+            col("raw_characters")
+                .filter(col("status_code").eq(lit(2)))
+                .count()
+                .alias("successful"),
+            col("raw_characters")
+                .filter(col("status_code").eq(lit(3)))
+                .count()
+                .alias("redirection"),
+            col("raw_characters")
+                .filter(col("status_code").eq(lit(4)))
+                .count()
+                .alias("client_error"),
+            col("raw_characters")
+                .filter(col("status_code").eq(lit(5)))
+                .count()
+                .alias("server_error"),
+            col("raw_characters").count().alias("total"),
+        ])
         .sort(["raw_characters"], Default::default())
         .collect()
         .unwrap();
 
-    let mut file = File::create("example.csv").expect("could not create file");
+    let mut file = File::create("frequency.csv").expect("could not create file");
 
-    let _ = CsvWriter::new(&mut file)
-        .finish(&mut grouped_df);
+    CsvWriter::new(&mut file)
+        .finish(&mut grouped_df)
+        .expect("could not write to file");
 
     println!("{:?}", grouped_df);
 }
