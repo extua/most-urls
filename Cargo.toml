@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+flate2 = "1.1.2"
 idna = "1.0.3"
 nanoserde = { version = "0.2.1", default-features = false, features = ["std", "json"] }
 percent-encoding = "2.3.1"

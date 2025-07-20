@@ -49,5 +49,5 @@ fn main() {
         .finish(&mut grouped_df)
         .expect("could not write to file");
 
-    println!("{:?}", grouped_df);
+    println!("{grouped_df:?}");
 }

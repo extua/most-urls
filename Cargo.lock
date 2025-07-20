@@ -1187,6 +1187,7 @@ dependencies = [
 name = "most-urls"
 version = "0.1.0"
 dependencies = [
+ "flate2",
  "idna",
  "nanoserde",
  "percent-encoding",
