@@ -2,27 +2,42 @@ use std::fs::File;
 use std::io::{self, BufRead, BufReader};
 use std::path::Path;
 
+use flate2;
 use flate2::read::GzDecoder;
 
-fn main() {
+#[tokio::main]
+async fn main() {
     if let Ok(lines) = read_lines("cc-index.paths") {
         let line_iterator = lines.map_while(Result::ok);
+
+        const APP_USER_AGENT: &str =
+            concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"),);
+
+        let client = reqwest::Client::builder()
+            .user_agent(APP_USER_AGENT)
+            .build()
+            .unwrap();
+
         for download_path in line_iterator {
             if download_path.ends_with("gz") {
                 let full_download_path = format!("https://data.commoncrawl.org/{download_path}");
 
                 println!("downloading {full_download_path}");
 
-                // download the file
-                let body = reqwest::blocking::get(full_download_path)
+                // download the file, this returns compressed nonsense
+                let body = client
+                    .get(full_download_path)
+                    .send()
                     .unwrap()
                     .bytes()
                     .unwrap();
 
-                // try this?
-                let reader = GzDecoder::new(body);
+                let mut decoder = GzDecoder::new(BufReader::new(body));
 
-                // for line in reader.lines() {
+                // now, decode the bytes in the response
+                // let reader = GzDecoder::new(body);
+
+                // for line in body.lines() {
                 //     println!("{line}");
                 // }
             }
